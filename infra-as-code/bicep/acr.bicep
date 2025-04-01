@@ -55,7 +55,7 @@ resource acrResource 'Microsoft.ContainerRegistry/registries@2023-11-01-preview'
   name: acrName
   location: location
   sku: {
-    name: 'Premium'
+    name: 'Standard'  // Changed from Premium to Standard for cost savings in PoC
   }
   properties: {
     adminUserEnabled: false
@@ -74,20 +74,10 @@ resource acrResource 'Microsoft.ContainerRegistry/registries@2023-11-01-preview'
       }
     }
     publicNetworkAccess: 'Disabled'
-    zoneRedundancy: 'Enabled'
+    // Removed zoneRedundancy property as it's only available in Premium SKU
   }
   // If this child resource fails or gets stuck in deployment then make sure your network settings, including DNS are correct. For reference https://learn.microsoft.com/azure/container-registry/tasks-agent-pools#add-firewall-rules
-  @description('Compute in the virtual network that can be used to build container images. This could also be done with tasks or images could be built on build agents.')
-  resource imageBuildPool 'agentPools@2019-06-01-preview' = {
-    name: 'imgbuild'
-    location: location
-    properties: {
-      os: 'Linux'
-      count: 1
-      virtualNetworkSubnetResourceId: vnet::buildAgentSubnet.id
-      tier: 'S1'
-    }
-  }
+  // Removed agentPools resource as it requires Premium SKU
 }
 
 @description('Diagnostic settings for the Azure Container Registry instance.')

@@ -150,7 +150,7 @@ resource openAiAccount 'Microsoft.CognitiveServices/accounts@2024-06-01-preview'
     name: 'gpt35'
     sku: {
       name: 'Standard'
-      capacity: 25
+      capacity: 5  // Reduced from 25 to 5 for cost savings in POC
     }
     properties: {
       model: {

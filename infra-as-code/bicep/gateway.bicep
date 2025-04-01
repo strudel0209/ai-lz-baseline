@@ -153,8 +153,8 @@ resource appGateway 'Microsoft.Network/applicationGateways@2024-01-01' = {
   }
   properties: {
     sku: {
-      name: 'WAF_v2'
-      tier: 'WAF_v2'
+      name: 'Standard_v2'  // Changed from WAF_v2 to Standard_v2 for cost savings in POC
+      tier: 'Standard_v2'  // Changed from WAF_v2 to Standard_v2
     }
     sslPolicy: {
       policyType: 'Custom'

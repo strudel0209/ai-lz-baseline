@@ -511,6 +511,7 @@ You will need access to the prompt flow files for this experience, since we'll b
 
    az webapp config container set -n $PF_APP_SERVICE_NAME -g $RESOURCE_GROUP -i $ACR_IMAGE_NAME -r "https://${NAME_OF_ACR}.azurecr.io"
    az webapp deployment container config -e true -n $PF_APP_SERVICE_NAME -g $RESOURCE_GROUP
+   ```
 
 1. Modify the configuration setting in the App Service that has the chat UI and point it to your deployed prompt flow endpoint hosted in App Service instead of the managed online endpoint.
 
@@ -544,6 +545,45 @@ az group delete --name $RESOURCE_GROUP -y
 az keyvault purge  -n kv-${BASE_NAME}
 az cognitiveservices account purge -g $RESOURCE_GROUP -l $LOCATION -n oai-${BASE_NAME}
 ```
+
+## Cost optimization
+
+This reference implementation is designed to showcase a production-ready architecture for Azure OpenAI in a landing zone. However, for development or testing purposes, you may want to reduce costs by adjusting the SKUs of various resources. Here are recommended modifications to minimize costs:
+
+### App Service
+- Change from P1v3 to lower SKUs such as B1 or S1 for development/testing
+- Reduce instance count from 3 to 1 for non-production environments
+
+### Azure Application Gateway
+- Switch from Standard_v2 to Standard SKU if WAF capabilities aren't required
+- Reduce instance count from 3 to 1 for non-production environments
+
+### Azure Machine Learning
+- Use smaller VM sizes for compute clusters (e.g., Standard_DS2_v2 instead of Standard_D2as_v4)
+- Reduce the minimum number of nodes to 0 when not in use
+
+### Azure OpenAI
+- Maintain Standard tier but configure usage limits and implement token quota allocation
+- Use gpt-35-turbo model instead of more expensive models like gpt-4
+
+### Storage Accounts
+- Switch from Zone-redundant storage (ZRS) to Locally-redundant storage (LRS) for development
+- Consider Standard performance tier for all storage accounts
+
+### Azure Container Registry
+- Use Basic tier instead of Standard tier for development/testing
+
+### Azure Key Vault
+- Standard tier is already the most cost-effective option
+
+### Operational Insights
+- Configure data retention to minimize storage costs
+- Implement custom log filters to reduce data ingestion
+
+> [!IMPORTANT]
+> These cost optimization recommendations are intended for development and testing environments. For production workloads, carefully evaluate performance and availability requirements before implementing cost-saving measures.
+
+To implement these changes, you would need to modify the appropriate parameters in your Bicep templates before deployment.
 
 ## Contributions
 

@@ -61,7 +61,7 @@ resource appDeployStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: appDeployStorageName
   location: location
   sku: {
-    name: 'Standard_ZRS'
+    name: 'Standard_LRS'  // Changed from Standard_ZRS to Standard_LRS for cost savings in PoC
   }
   kind: 'StorageV2'
   properties: {
@@ -172,7 +172,7 @@ resource mlStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: mlStorageName
   location: location
   sku: {
-    name: 'Standard_ZRS'
+    name: 'Standard_LRS'  // Changed from Standard_ZRS to Standard_LRS for cost savings in PoC
   }
   kind: 'StorageV2'
   properties: {

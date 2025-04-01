@@ -144,12 +144,12 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   location: location
     kind: 'linux'
     sku: {
-      name: 'P1v3'
-      tier: 'PremiumV3'
-      capacity: 3
+      name: 'B1'      // Changed from P1v3 to B1 (Basic tier) for cost savings in PoC
+      tier: 'Basic'   // Changed from PremiumV3 to Basic
+      capacity: 1     // Reduced from 3 instances to 1
     }
   properties: {
-    zoneRedundant: true
+    // Removed zoneRedundancy as it's not available in Basic tier
     reserved: true
   }
 }
@@ -270,15 +270,15 @@ resource appServicePlanAutoScaleSettings 'Microsoft.Insights/autoscalesettings@2
   name: '${appServicePlan.name}-autoscale'
   location: location
   properties: {
-    enabled: true
+    enabled: false  // Disabled auto-scaling for PoC to reduce costs
     targetResourceUri: appServicePlan.id
     profiles: [
       {
         name: 'Scale out condition'
         capacity: {
-          maximum: '5'
-          default: '3'
-          minimum: '3'
+          maximum: '1'  // Reduced from 5
+          default: '1'  // Reduced from 3 
+          minimum: '1'  // Reduced from 3
         }
         rules: [
           {
