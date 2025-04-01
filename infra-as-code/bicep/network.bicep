@@ -418,7 +418,7 @@ output appGatewaySubnetName string = vnet::appGatewaySubnet.name
 output privateEndpointsSubnetName string = vnet::privateEnpointsSubnet.name
 
 @description('The DNS servers that were configured on the virtual network.')
-output vnetDNSServers array = vnet.properties.dhcpOptions.dnsServers
+output vnetDNSServers array = contains(vnet.properties, 'dhcpOptions') && contains(vnet.properties.dhcpOptions, 'dnsServers') ? vnet.properties.dhcpOptions.dnsServers : []
 
 @description('The name of the build agent subnet.')
 output agentSubnetName string = vnet::agentsSubnet.name

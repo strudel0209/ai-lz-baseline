@@ -153,8 +153,19 @@ The following steps are required to deploy the infrastructure from the command l
      Create the certificate that will be presented to web clients by Azure Application Gateway for your domain.
 
      ```bash
-     openssl req -x509 -nodes -days 365 -newkey rsa:2048 -out appgw.crt -keyout appgw.key -subj "/CN=${DOMAIN_NAME_APPSERV}/O=Contoso" -addext "subjectAltName = DNS:${DOMAIN_NAME_APPSERV}" -addext "keyUsage = digitalSignature" -addext "extendedKeyUsage = serverAuth"
+     # Option 1: Use escaped forward slashes in Git Bash
+     openssl req -x509 -nodes -days 365 -newkey rsa:2048 -out appgw.crt -keyout appgw.key -subj "//CN=${DOMAIN_NAME_APPSERV}//O=Contoso" -addext "subjectAltName = DNS:${DOMAIN_NAME_APPSERV}" -addext "keyUsage = digitalSignature" -addext "extendedKeyUsage = serverAuth"
      openssl pkcs12 -export -out appgw.pfx -in appgw.crt -inkey appgw.key -passout pass:
+     
+     # Option 2: Alternative approach using Windows CMD
+     # Run these commands in Command Prompt instead of Git Bash:
+     # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -out appgw.crt -keyout appgw.key -subj "/CN=%DOMAIN_NAME_APPSERV%/O=Contoso" -addext "subjectAltName = DNS:%DOMAIN_NAME_APPSERV%" -addext "keyUsage = digitalSignature" -addext "extendedKeyUsage = serverAuth"
+     # openssl pkcs12 -export -out appgw.pfx -in appgw.crt -inkey appgw.key -passout pass:
+     
+     # Option 3: Alternative approach using PowerShell
+     # Run these commands in PowerShell instead of Git Bash:
+     # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -out appgw.crt -keyout appgw.key -subj "/CN=$env:DOMAIN_NAME_APPSERV/O=Contoso" -addext "subjectAltName = DNS:$env:DOMAIN_NAME_APPSERV" -addext "keyUsage = digitalSignature" -addext "extendedKeyUsage = serverAuth"
+     # openssl pkcs12 -export -out appgw.pfx -in appgw.crt -inkey appgw.key -passout pass:
      ```
 
    - Base64 encode the client-facing certificate.

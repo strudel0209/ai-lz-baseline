@@ -55,7 +55,7 @@ resource acrResource 'Microsoft.ContainerRegistry/registries@2023-11-01-preview'
   name: acrName
   location: location
   sku: {
-    name: 'Standard'  // Changed from Premium to Standard for cost savings in PoC
+    name: 'Premium'  // Upgraded to Premium to support network rules
   }
   properties: {
     adminUserEnabled: false
@@ -74,10 +74,8 @@ resource acrResource 'Microsoft.ContainerRegistry/registries@2023-11-01-preview'
       }
     }
     publicNetworkAccess: 'Disabled'
-    // Removed zoneRedundancy property as it's only available in Premium SKU
+    zoneRedundancy: 'Disabled'
   }
-  // If this child resource fails or gets stuck in deployment then make sure your network settings, including DNS are correct. For reference https://learn.microsoft.com/azure/container-registry/tasks-agent-pools#add-firewall-rules
-  // Removed agentPools resource as it requires Premium SKU
 }
 
 @description('Diagnostic settings for the Azure Container Registry instance.')

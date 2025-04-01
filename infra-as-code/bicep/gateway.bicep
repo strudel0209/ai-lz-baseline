@@ -114,31 +114,32 @@ resource appGatewayPublicIp 'Microsoft.Network/publicIPAddresses@2022-11-01' = {
 }
 
 //WAF policy definition
-resource wafPolicy 'Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies@2023-05-01' = {
-  name: wafPolicyName
-  location: location
-  properties: {
-    policySettings: {
-      fileUploadLimitInMb: 10
-      state: 'Enabled'
-      mode: 'Prevention'
-    }
-    managedRules: {
-      managedRuleSets: [
-        {
-          ruleSetType: 'OWASP'
-          ruleSetVersion: '3.2'
-          ruleGroupOverrides: []
-        }
-        {
-          ruleSetType: 'Microsoft_BotManagerRuleSet'
-          ruleSetVersion: '1.0'
-          ruleGroupOverrides: []
-        }
-      ]
-    }
-  }
-}
+// Removing the WAF policy as it's not compatible with Standard_v2 SKU
+// resource wafPolicy 'Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies@2023-05-01' = {
+//   name: wafPolicyName
+//   location: location
+//   properties: {
+//     policySettings: {
+//       fileUploadLimitInMb: 10
+//       state: 'Enabled'
+//       mode: 'Prevention'
+//     }
+//     managedRules: {
+//       managedRuleSets: [
+//         {
+//           ruleSetType: 'OWASP'
+//           ruleSetVersion: '3.2'
+//           ruleGroupOverrides: []
+//         }
+//         {
+//           ruleSetType: 'Microsoft_BotManagerRuleSet'
+//           ruleSetVersion: '1.0'
+//           ruleGroupOverrides: []
+//         }
+//       ]
+//     }
+//   }
+// }
 
 //App Gateway
 resource appGateway 'Microsoft.Network/applicationGateways@2024-01-01' = {
@@ -153,8 +154,8 @@ resource appGateway 'Microsoft.Network/applicationGateways@2024-01-01' = {
   }
   properties: {
     sku: {
-      name: 'Standard_v2'  // Changed from WAF_v2 to Standard_v2 for cost savings in POC
-      tier: 'Standard_v2'  // Changed from WAF_v2 to Standard_v2
+      name: 'Standard_v2'  // Kept as Standard_v2 for PoC purposes
+      tier: 'Standard_v2'  // Kept as Standard_v2
     }
     sslPolicy: {
       policyType: 'Custom'
@@ -215,9 +216,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2024-01-01' = {
         }
       }
     ]
-    firewallPolicy: {
-      id: wafPolicy.id
-    }
+    // Removed firewallPolicy reference as it's not compatible with Standard_v2 SKU
     enableHttp2: false
     sslCertificates: [
       {
