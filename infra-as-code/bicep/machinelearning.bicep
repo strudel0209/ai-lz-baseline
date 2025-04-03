@@ -37,6 +37,15 @@ param yourPrincipalId string
 
 // ---- Variables ----
 var workspaceName = 'mlw-${baseName}'
+var mlPrivateEndpointName = 'pep-${workspaceName}'
+var mlDnsGroupName = '${mlPrivateEndpointName}/default'
+
+// Define DNS zone names for Azure ML
+var mlWorkspaceDnsZoneName = 'privatelink.api.azureml.ms'
+var mlWorkspaceCertDnsZoneName = 'privatelink.cert.api.azureml.ms'
+var mlNotebookDnsZoneName = 'privatelink.notebooks.azure.net'
+var mlInferenceDnsZoneName = 'privatelink.inference.api.azureml.ms'
+var mlModelsDnsZoneName = 'privatelink.models.api.azureml.ms'
 
 // ---- Existing resources ----
 resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
@@ -384,6 +393,148 @@ resource machineLearningPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024
       id: vnet::privateEndpointsSubnet.id
     }
   }
+}
+
+// Create Private DNS Zone for Azure ML Workspace API
+resource mlWorkspaceDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: mlWorkspaceDnsZoneName
+  location: 'global'
+  properties: {}
+}
+
+// Create Virtual Network Link for Workspace API DNS Zone
+resource mlWorkspaceDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: mlWorkspaceDnsZone
+  name: '${mlWorkspaceDnsZoneName}-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// Create Private DNS Zone for Azure ML Workspace Cert API
+resource mlWorkspaceCertDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: mlWorkspaceCertDnsZoneName
+  location: 'global'
+  properties: {}
+}
+
+// Create Virtual Network Link for Workspace Cert API DNS Zone
+resource mlWorkspaceCertDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: mlWorkspaceCertDnsZone
+  name: '${mlWorkspaceCertDnsZoneName}-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// Create Private DNS Zone for Azure ML Notebooks
+resource mlNotebookDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: mlNotebookDnsZoneName
+  location: 'global'
+  properties: {}
+}
+
+// Create Virtual Network Link for Notebooks DNS Zone
+resource mlNotebookDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: mlNotebookDnsZone
+  name: '${mlNotebookDnsZoneName}-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// Create Private DNS Zone for Azure ML Inference
+resource mlInferenceDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: mlInferenceDnsZoneName
+  location: 'global'
+  properties: {}
+}
+
+// Create Virtual Network Link for Inference DNS Zone
+resource mlInferenceDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: mlInferenceDnsZone
+  name: '${mlInferenceDnsZoneName}-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// Create Private DNS Zone for Azure ML Models
+resource mlModelsDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: mlModelsDnsZoneName
+  location: 'global'
+  properties: {}
+}
+
+// Create Virtual Network Link for Models DNS Zone
+resource mlModelsDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: mlModelsDnsZone
+  name: '${mlModelsDnsZoneName}-link'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// Configure DNS Zone Group for the ML private endpoint
+resource mlDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-01-01' = {
+  name: mlDnsGroupName
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'workspace'
+        properties: {
+          privateDnsZoneId: mlWorkspaceDnsZone.id
+        }
+      }
+      {
+        name: 'workspaceCert'
+        properties: {
+          privateDnsZoneId: mlWorkspaceCertDnsZone.id
+        }
+      }
+      {
+        name: 'notebook'
+        properties: {
+          privateDnsZoneId: mlNotebookDnsZone.id
+        }
+      }
+      {
+        name: 'inference'
+        properties: {
+          privateDnsZoneId: mlInferenceDnsZone.id
+        }
+      }
+      {
+        name: 'models'
+        properties: {
+          privateDnsZoneId: mlModelsDnsZone.id
+        }
+      }
+    ]
+  }
+  dependsOn: [
+    machineLearningPrivateEndpoint
+  ]
 }
 
 output managedOnlineEndpointResourceId string = chatProject::endpoint.id
