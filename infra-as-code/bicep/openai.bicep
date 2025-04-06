@@ -20,9 +20,11 @@ param privateEndpointsSubnetName string
 @description('The name of the workload\'s existing Log Analytics workspace.')
 param logWorkspaceName string
 
-//variables
+// ---- Variables ----
 var openaiName = 'oai-${baseName}'
 var openaiPrivateEndpointName = 'pep-${openaiName}'
+var searchName = 'srch-${baseName}'
+var searchPrivateEndpointName = 'pep-${searchName}'
 
 // ---- Existing resources ----
 resource vnet 'Microsoft.Network/virtualNetworks@2022-11-01' existing = {
@@ -211,6 +213,77 @@ resource openaiPrivateEndpoint 'Microsoft.Network/privateEndpoints@2022-11-01' =
   ]
 }
 
+// ---- Azure Cognitive Search Service ----
+resource searchService 'Microsoft.Search/searchServices@2023-11-01' = {
+  name: searchName
+  location: location
+  sku: {
+    name: 'standard'
+  }
+  properties: {
+    replicaCount: 1
+    partitionCount: 1
+    hostingMode: 'default'
+    publicNetworkAccess: 'disabled'
+    networkRuleSet: {
+      ipRules: []
+    }
+    semanticSearch: 'free'
+  }
+}
+
+// Search Service diagnostic settings
+resource searchDiagSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'default'
+  scope: searchService
+  properties: {
+    workspaceId: logWorkspace.id
+    logs: [
+      {
+        categoryGroup: 'allLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+  }
+}
+
+// Private endpoint for search service
+resource searchPrivateEndpoint 'Microsoft.Network/privateEndpoints@2022-11-01' = {
+  name: searchPrivateEndpointName
+  location: location
+  properties: {
+    subnet: {
+      id: vnet::privateEndpointsSubnet.id
+    }
+    privateLinkServiceConnections: [
+      {
+        name: searchPrivateEndpointName
+        properties: {
+          groupIds: [
+            'searchService'
+          ]
+          privateLinkServiceId: searchService.id
+        }
+      }
+    ]
+  }
+}
+
 // ---- Outputs ----
 
 output openAiResourceName string = openAiAccount.name
+output searchServiceName string = searchService.name

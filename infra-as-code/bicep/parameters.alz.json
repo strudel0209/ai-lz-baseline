@@ -24,7 +24,13 @@
       "value": "10.1.2.32/27"
     },
     "jumpBoxSubnetAddressPrefix": {
-      "value": "10.1.2.128/28"
+      "value": "10.1.4.128/28"
+    },
+    "aiAgentsSubnetAddressPrefix": {
+      "value": "10.1.5.0/27"
+    },
+    "aiAgentsDataPlaneSubnetAddressPrefix": {
+      "value": "10.1.5.32/27"
     }
   }
 }

@@ -40,6 +40,14 @@ param agentsSubnetAddressPrefix string
 @minLength(9)
 param jumpBoxSubnetAddressPrefix string
 
+@description('Address space within the existing spoke\'s available address space to be used for AI Agents service.')
+@minLength(9)
+param aiAgentsSubnetAddressPrefix string
+
+@description('Address space within the existing spoke\'s available address space to be used for AI Agents data plane.')
+@minLength(9)
+param aiAgentsDataPlaneSubnetAddressPrefix string
+
 //--- Routing ----
 
 // Hub firewall UDR
@@ -96,7 +104,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
     ]
   }
 
-  resource privateEnpointsSubnet 'subnets' = {
+  resource privateEndpointsSubnet 'subnets' = {
     name: 'snet-privateEndpoints'
     properties: {
       addressPrefix: privateEndpointsSubnetAddressPrefix
@@ -133,7 +141,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
         : null
     }
     dependsOn: [
-      privateEnpointsSubnet // Single thread these
+      privateEndpointsSubnet // Single thread these
     ]
   }
 
@@ -154,6 +162,62 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-01-01' existing = {
     }
     dependsOn: [
       agentsSubnet // Single thread these
+    ]
+  }
+
+  resource aiAgentsSubnet 'subnets' = {
+    name: 'snet-aiagents'
+    properties: {
+      addressPrefix: aiAgentsSubnetAddressPrefix
+      networkSecurityGroup: {
+        id: aiAgentsSubnetNsg.id
+      }
+      privateEndpointNetworkPolicies: 'Disabled'
+      privateLinkServiceNetworkPolicies: 'Enabled'
+      delegations: [
+        {
+          name: 'Microsoft.AzureAI.Agents'
+          properties: {
+            serviceName: 'Microsoft.AzureAI/Agents'
+          }
+        }
+      ]
+      routeTable: hubFirewallUdr != null
+        ? {
+            id: hubFirewallUdr.id
+          }
+        : null
+    }
+    dependsOn: [
+      jumpBoxSubnet // Single thread these
+    ]
+  }
+
+  resource aiAgentsDataPlaneSubnet 'subnets' = {
+    name: 'snet-aiagents-dataplane'
+    properties: {
+      addressPrefix: aiAgentsDataPlaneSubnetAddressPrefix
+      networkSecurityGroup: {
+        id: aiAgentsDataPlaneSubnetNsg.id
+      }
+      privateEndpointNetworkPolicies: 'Disabled'
+      privateLinkServiceNetworkPolicies: 'Enabled'
+      delegations: [
+        {
+          name: 'Microsoft.AzureAI.Agents.DataPlane'
+          properties: {
+            serviceName: 'Microsoft.AzureAI/Agents/DataPlane'
+          }
+        }
+      ]
+      routeTable: hubFirewallUdr != null
+        ? {
+            id: hubFirewallUdr.id
+          }
+        : null
+    }
+    dependsOn: [
+      aiAgentsSubnet // Single thread these
     ]
   }
 }
@@ -326,7 +390,7 @@ resource agentsSubnetNsg 'Microsoft.Network/networkSecurityGroups@2022-11-01' = 
           protocol: '*'
           sourcePortRange: '*'
           destinationPortRange: '*'
-          sourceAddressPrefix: appGatewaySubnetAddressPrefix
+          sourceAddressPrefix: agentsSubnetAddressPrefix
           destinationAddressPrefix: '*'
           access: 'Deny'
           priority: 1000
@@ -405,6 +469,96 @@ resource jumpboxSubnetNsg 'Microsoft.Network/networkSecurityGroups@2022-11-01' =
   }
 }
 
+// AI Agents subnet NSG
+resource aiAgentsSubnetNsg 'Microsoft.Network/networkSecurityGroups@2022-11-01' = {
+  name: 'nsg-aiAgentsSubnet'
+  location: location
+  properties: {
+    securityRules: [
+      {
+        name: 'AIAgents.Out.Allow.PrivateEndpoints'
+        properties: {
+          description: 'Allow outbound traffic from the AI Agents subnet to the Private Endpoints subnet'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: aiAgentsSubnetAddressPrefix
+          destinationAddressPrefix: privateEndpointsSubnetAddressPrefix
+          access: 'Allow'
+          priority: 100
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AIAgents.Out.Allow.DataPlane'
+        properties: {
+          description: 'Allow outbound traffic from the AI Agents subnet to the AI Agents Data Plane subnet'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: aiAgentsSubnetAddressPrefix
+          destinationAddressPrefix: aiAgentsDataPlaneSubnetAddressPrefix
+          access: 'Allow'
+          priority: 110
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AIAgents.Out.Allow.AzureMonitor'
+        properties: {
+          description: 'Allow outbound traffic from AI Agents to the AzureMonitor ServiceTag'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: aiAgentsSubnetAddressPrefix
+          destinationAddressPrefix: 'AzureMonitor'
+          access: 'Allow'
+          priority: 120
+          direction: 'Outbound'
+        }
+      }
+    ]
+  }
+}
+
+// AI Agents Data Plane subnet NSG
+resource aiAgentsDataPlaneSubnetNsg 'Microsoft.Network/networkSecurityGroups@2022-11-01' = {
+  name: 'nsg-aiAgentsDataPlaneSubnet'
+  location: location
+  properties: {
+    securityRules: [
+      {
+        name: 'AIAgentsDataPlane.Out.Allow.PrivateEndpoints'
+        properties: {
+          description: 'Allow outbound traffic from the AI Agents Data Plane subnet to the Private Endpoints subnet'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: aiAgentsDataPlaneSubnetAddressPrefix
+          destinationAddressPrefix: privateEndpointsSubnetAddressPrefix
+          access: 'Allow'
+          priority: 100
+          direction: 'Outbound'
+        }
+      }
+      {
+        name: 'AIAgentsDataPlane.Out.Allow.AzureMonitor'
+        properties: {
+          description: 'Allow outbound traffic from AI Agents Data Plane to the AzureMonitor ServiceTag'
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: aiAgentsDataPlaneSubnetAddressPrefix
+          destinationAddressPrefix: 'AzureMonitor'
+          access: 'Allow'
+          priority: 110
+          direction: 'Outbound'
+        }
+      }
+    ]
+  }
+}
+
 @description('The name of the spoke vnet.')
 output vnetName string = vnet.name
 
@@ -415,10 +569,16 @@ output appServicesSubnetName string = vnet::appServiceSubnet.name
 output appGatewaySubnetName string = vnet::appGatewaySubnet.name
 
 @description('The name of the private endpoints subnet.')
-output privateEndpointsSubnetName string = vnet::privateEnpointsSubnet.name
+output privateEndpointsSubnetName string = vnet::privateEndpointsSubnet.name
 
 @description('The DNS servers that were configured on the virtual network.')
 output vnetDNSServers array = contains(vnet.properties, 'dhcpOptions') && contains(vnet.properties.dhcpOptions, 'dnsServers') ? vnet.properties.dhcpOptions.dnsServers : []
 
 @description('The name of the build agent subnet.')
 output agentSubnetName string = vnet::agentsSubnet.name
+
+@description('The name of the AI Agents subnet.')
+output aiAgentsSubnetName string = vnet::aiAgentsSubnet.name
+
+@description('The name of the AI Agents data plane subnet.')
+output aiAgentsDataPlaneSubnetName string = vnet::aiAgentsDataPlaneSubnet.name

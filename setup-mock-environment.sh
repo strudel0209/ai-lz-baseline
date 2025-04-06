@@ -75,6 +75,12 @@ cat > ./infra-as-code/bicep/parameters.mock.json << EOF
     },
     "jumpBoxSubnetAddressPrefix": {
       "value": "10.1.4.128/28"
+    },
+    "aiAgentsSubnetAddressPrefix": {
+      "value": "10.1.5.0/27"
+    },
+    "aiAgentsDataPlaneSubnetAddressPrefix": {
+      "value": "10.1.5.32/27"
     }
   }
 }

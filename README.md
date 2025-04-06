@@ -38,6 +38,7 @@ Just like the baseline reference implementation, this implementation covers the 
 1. Authoring a flow - Authoring a flow using prompt flow in the Azure AI Foundry portal
 1. Deploying a flow to managed compute behind an Azure Machine Learning endpoint - The deployment of the executable flow created in Azure AI Foundry to managed online endpoint. The client UI that is hosted in Azure App Service accesses the deployed flow.
 1. Deploying a flow to Azure App Service (Self-hosted option) - The deployment of an executable flow as a container to Azure App Service. The client UI that accesses the flow is also hosted in Azure App Service.
+1. Azure AI Agents with private networking - The deployment of AI Agents that can only be accessed through private networking connections to ensure secure operation in a landing zone environment.
 
 ### Authoring a flow
 
@@ -60,6 +61,20 @@ The Azure AI Foundry deployment architecture diagram illustrates how a front-end
 The Azure App Service deployment architecture diagram illustrates how the same prompt flow is containerized and deployed to Azure App Service alongside the same front-end web application from the prior architecture. This solution is a completely self-hosted, externalized alternative to an Azure AI Foundry managed online endpoint.
 
 The flow is still authored in a network-isolated Azure AI Foundry project. To deploy an App Service in this architecture, the flows need to be containerized and pushed to the Azure Container Registry that is accessible through private endpoints by the App Service.
+
+### Azure AI Agents with private networking
+
+![Diagram of deploying AI Agents with private networking in a landing zone environment. The diagram illustrates how AI Agents connect privately to Azure OpenAI and other services.](docs/media/azure-openai-baseline-landing-zone.png)
+
+The Azure AI Agents architecture with private networking is designed to secure agent communication within the enterprise landing zone environment. This configuration ensures that AI Agents can only be accessed through private endpoints and that all communication between agents and dependent services like Azure OpenAI occurs securely within the virtual network.
+
+In this architecture, AI Agents require two dedicated subnets within your virtual network:
+1. **Control plane subnet** - Hosts the AI Agents service control plane
+2. **Data plane subnet** - Used for AI Agents runtime execution
+
+All dependencies such as Azure OpenAI, Azure Storage, and Azure AI Search are accessed through private endpoints in the private endpoints subnet. The deployment also creates a user-assigned managed identity for AI Agents, which is granted the necessary permissions to access these services.
+
+When public network access is disabled for AI Agents, you must use the provided jumpbox or a workstation connected to the virtual network to manage and create agents. In this configuration, agents must be created and managed using the Azure SDK or REST API rather than through the Azure AI Foundry portal.
 
 ## Deployment guide
 

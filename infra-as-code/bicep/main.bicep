@@ -52,6 +52,14 @@ param agentsSubnetAddressPrefix string
 @minLength(9)
 param jumpBoxSubnetAddressPrefix string
 
+@description('Address space within the existing spoke\'s available address space to be used for AI Agents service.')
+@minLength(9)
+param aiAgentsSubnetAddressPrefix string
+
+@description('Address space within the existing spoke\'s available address space to be used for AI Agents data plane.')
+@minLength(9)
+param aiAgentsDataPlaneSubnetAddressPrefix string
+
 @description('Assign your user some roles to support fluid access when working in the AI Foundry portal.')
 @maxLength(37)
 @minLength(36)
@@ -102,6 +110,8 @@ module networkModule 'network.bicep' = {
     privateEndpointsSubnetAddressPrefix: privateEndpointsSubnetAddressPrefix
     agentsSubnetAddressPrefix: agentsSubnetAddressPrefix
     jumpBoxSubnetAddressPrefix: jumpBoxSubnetAddressPrefix
+    aiAgentsSubnetAddressPrefix: aiAgentsSubnetAddressPrefix
+    aiAgentsDataPlaneSubnetAddressPrefix: aiAgentsDataPlaneSubnetAddressPrefix
   }
 }
 
@@ -184,24 +194,6 @@ module aiFoundryModule 'machinelearning.bicep' = {
   }
 }
 
-//Deploy an Azure Application Gateway with WAF v2 and a custom domain name.
-module gatewayModule 'gateway.bicep' = {
-  name: 'gatewayDeploy'
-  scope: rgWorkload
-  params: {
-    location: rgWorkload.location
-    baseName: baseName
-    customDomainName: customDomainName
-    appName: webappModule.outputs.appName
-    vnetName: networkModule.outputs.vnetName
-    virtualNetworkResourceGroupName: rgSpoke.name
-    appGatewaySubnetName: networkModule.outputs.appGatewaySubnetName
-    keyVaultName: keyVaultModule.outputs.keyVaultName
-    gatewayCertSecretKey: keyVaultModule.outputs.gatewayCertSecretKey
-    logWorkspaceName: monitoringModule.outputs.logWorkspaceName
-  }
-}
-
 // Deploy the web apps for the front end demo UI and the containerised promptflow endpoint
 module webappModule 'webapp.bicep' = {
   name: 'webappDeploy'
@@ -221,6 +213,48 @@ module webappModule 'webapp.bicep' = {
     privateEndpointsSubnetName: networkModule.outputs.privateEndpointsSubnetName
     logWorkspaceName: monitoringModule.outputs.logWorkspaceName
   }
+}
+
+//Deploy an Azure Application Gateway with WAF v2 and a custom domain name.
+module gatewayModule 'gateway.bicep' = {
+  name: 'gatewayDeploy'
+  scope: rgWorkload
+  params: {
+    location: rgWorkload.location
+    baseName: baseName
+    customDomainName: customDomainName
+    appName: webappModule.outputs.appName
+    vnetName: networkModule.outputs.vnetName
+    virtualNetworkResourceGroupName: rgSpoke.name
+    appGatewaySubnetName: networkModule.outputs.appGatewaySubnetName
+    keyVaultName: keyVaultModule.outputs.keyVaultName
+    gatewayCertSecretKey: keyVaultModule.outputs.gatewayCertSecretKey
+    logWorkspaceName: monitoringModule.outputs.logWorkspaceName
+  }
+}
+
+// --- Call AI Agents module ---
+module aiAgentsModule 'aiagents.bicep' = {
+  name: 'aiAgentsDeployment'
+  scope: rgWorkload
+  params: {
+    location: rgWorkload.location
+    baseName: baseName
+    virtualNetworkResourceGroupName: rgSpoke.name
+    vnetName: networkModule.outputs.vnetName
+    privateEndpointsSubnetName: networkModule.outputs.privateEndpointsSubnetName
+    aiAgentsSubnetName: networkModule.outputs.aiAgentsSubnetName
+    aiAgentsDataPlaneSubnetName: networkModule.outputs.aiAgentsDataPlaneSubnetName
+    logWorkspaceName: monitoringModule.outputs.logWorkspaceName
+    keyVaultName: keyVaultModule.outputs.keyVaultName
+    storageAccountName: storageModule.outputs.aiFoundryStorageAccountName
+    openAiResourceName: openaiModule.outputs.openAiResourceName
+    aiSearchName: openaiModule.outputs.searchServiceName
+    yourPrincipalId: yourPrincipalId
+  }
+  dependsOn: [
+    aiFoundryModule
+  ]
 }
 
 // Optional Deployment for Customer Usage Attribution
